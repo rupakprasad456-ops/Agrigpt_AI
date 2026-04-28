@@ -1,48 +1,77 @@
-import os
-import traceback
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from farmer_agent import FarmerAgent, AgentError
+from typing import List
 
+app = FastAPI(title="AgriGPT Farmer Agent", description="AI assistant for farmers with pest and government scheme information")
 
-def main():
-    print("AgriGPT Farmer Agent\n--------------------")
+class ChatRequest(BaseModel):
+    chatId: str
+    phone_number: str
+    message: str
+    api_key: str
 
+class ChatResponse(BaseModel):
+    response: str
+    sources: List[str]
+
+class PestQuery(BaseModel):
+    query: str
+
+class PestResponse(BaseModel):
+    pest: str
+    details: str
+
+class SchemeQuery(BaseModel):
+    query: str
+
+class SchemeResponse(BaseModel):
+    scheme: str
+    details: str
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat_endpoint(request: ChatRequest):
+    """Main chat endpoint that intelligently routes to pest or scheme tools"""
     try:
-        print("Step 1: Initializing agent...")
-        agent = FarmerAgent()
-        if agent.use_api:
-            print("Step 2: OpenAI API key found. Using API mode.")
-        else:
-            print("Step 2: No OpenAI API key found. Using local fallback mode.")
+        agent = FarmerAgent(api_key=request.api_key)
+        result = agent.chat(
+            message=request.message,
+            chat_id=request.chatId,
+            phone_number=request.phone_number
+        )
+        return ChatResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-        print("Step 3: Ready for farmer questions.")
+@app.post("/pests", response_model=PestResponse)
+async def pests_endpoint(query: PestQuery):
+    """Direct endpoint for pest and disease information"""
+    try:
+        # For this endpoint, we need an API key. In a real implementation,
+        # this might come from headers or be optional
+        agent = FarmerAgent(api_key="dummy_key")  # This endpoint doesn't use LLM
+        result = agent.get_pest_info(query.query)
+        return PestResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving pest information: {str(e)}")
 
-        while True:
-            try:
-                question = input("\nAsk AgriGPT for farming advice or type quit: ").strip()
-            except EOFError:
-                print("\nInput stream closed. Exiting AgriGPT.")
-                break
+@app.post("/schemes", response_model=SchemeResponse)
+async def schemes_endpoint(query: SchemeQuery):
+    """Direct endpoint for government scheme information"""
+    try:
+        # For this endpoint, we need an API key. In a real implementation,
+        # this might come from headers or be optional
+        agent = FarmerAgent(api_key="dummy_key")  # This endpoint doesn't use LLM
+        result = agent.get_scheme_info(query.query)
+        return SchemeResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving scheme information: {str(e)}")
 
-            if question.lower() in {"quit", "exit"}:
-                print("Exiting AgriGPT. Stay safe on the farm!")
-                break
-
-            print("Step 4: Sending question to agent...")
-            try:
-                answer = agent.ask(question)
-                print("Step 5: Agent response received.")
-                print("\n--- AgriGPT Response ---")
-                print(answer)
-            except AgentError as error:
-                print(f"Error: {error}")
-            except Exception as error:
-                print("Unexpected error occurred while querying the agent.")
-                traceback.print_exc()
-
-    except Exception as error:
-        print("Fatal error during agent startup:")
-        traceback.print_exc()
-
+@app.get("/")
+async def root():
+    """Health check endpoint"""
+    return {"message": "AgriGPT Farmer Agent API", "status": "running"}
 
 if __name__ == "__main__":
-    main()
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
