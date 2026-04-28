@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from farmer_agent import FarmerAgent, AgentError
+from farmer_agent import FarmerAgent
 from typing import List
 
 app = FastAPI(title="AgriGPT Farmer Agent", description="AI assistant for farmers with pest and government scheme information")

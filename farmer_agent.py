@@ -283,7 +283,7 @@ class FarmerAgent:
         self.api_key = api_key
         if GENAI_AVAILABLE:
             genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-pro')
+            self.model = genai.GenerativeModel('gemini-1.5-flash')
             self.use_ai = True
         else:
             self.use_ai = False
