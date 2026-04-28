@@ -87,6 +87,11 @@ python main.py
 
 The API will be available at `http://localhost:8000`
 
+**For Render deployment, use start command:**
+```
+uvicorn main:app --host 0.0.0.0 --port $PORT
+```
+
 ## Deployment on Render
 
 1. **Push to GitHub:**
@@ -101,7 +106,7 @@ git push origin main
    - Connect your GitHub repository
    - Choose "Web Service"
    - Set build command: `pip install -r requirements.txt`
-   - Set start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+   - Set start command: `./start.sh` or `uvicorn main:app --host 0.0.0.0 --port $PORT`
    - Deploy!
 
 3. **Verify Deployment:**
